@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29201.188
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebuggerListener", "DebuggerListener.csproj", "{75E9069D-37D6-4508-8228-6C4A814597E0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{75E9069D-37D6-4508-8228-6C4A814597E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{75E9069D-37D6-4508-8228-6C4A814597E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{75E9069D-37D6-4508-8228-6C4A814597E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{75E9069D-37D6-4508-8228-6C4A814597E0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8A0B01D0-B124-4987-B0C8-54B90EBAC8D1}
+	EndGlobalSection
+EndGlobal
