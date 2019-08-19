@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
@@ -6,17 +7,18 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using EnvDTE;
+using Microsoft;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Settings;
 using Task = System.Threading.Tasks.Task;
+using Process = EnvDTE.Process;
 
 namespace DebuggerListener
 {
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
-    [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExists_string, PackageAutoLoadFlags.BackgroundLoad)]
     [Guid(DebuggerListenerPackage.PackageGuidString)]
     public sealed class DebuggerListenerPackage : AsyncPackage
@@ -27,37 +29,33 @@ namespace DebuggerListener
 
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
-            dte = await GetServiceAsync(typeof(EnvDTE.DTE)) as DTE;
-            if (dte == null) return;
             ListenerAsync();
         }
 
         private async Task ListenerAsync()
         {
             await Task.Run(async () =>
-            {
-                while (true)
-                {
-                    var server = new NamedPipeServerStream($"DebuggerPipe.{System.Diagnostics.Process.GetCurrentProcess().Id}");
-                    await server.WaitForConnectionAsync();
-                    try
-                    {
-                        StreamReader reader = new StreamReader(server);
-                        StreamWriter writer = new StreamWriter(server);
-                        string line;
-                        while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync()))
-                        {
-                            string result = await ExecuteCommandAsync(line);
-                            await writer.WriteLineAsync(result);
-                            await writer.FlushAsync();
-                        }
-                    }
-                    catch (IOException) { }
-                    server.Close();
-                }
-            });
+              {
+                  while (true)
+                  {
+                      var server = new NamedPipeServerStream($"DebuggerPipe.{System.Diagnostics.Process.GetCurrentProcess().Id}");
+                      await server.WaitForConnectionAsync();
+                      try
+                      {
+                          StreamReader reader = new StreamReader(server);
+                          StreamWriter writer = new StreamWriter(server);
+                          string line;
+                          while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync()))
+                          {
+                              string result = await ExecuteCommandAsync(line);
+                              await writer.WriteLineAsync(result);
+                              await writer.FlushAsync();
+                          }
+                      }
+                      catch (IOException) { }
+                      server.Close();
+                  }
+              });
         }
 
         private async Task<string> ExecuteCommandAsync(string command)
@@ -84,6 +82,10 @@ namespace DebuggerListener
 
         private async Task<bool> AttachDebuggerAsync(int pid)
         {
+            if (dte is null)
+            {
+                await GetDTEAsync();
+            }
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             try
             {
@@ -102,6 +104,10 @@ namespace DebuggerListener
 
         private async Task<bool> IsProjectOpenedAsync(string projectName)
         {
+            if (dte is null)
+            {
+                await GetDTEAsync();
+            }
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             var projects = dte.Solution?.Projects;
             foreach (Project project in projects)
@@ -114,15 +120,11 @@ namespace DebuggerListener
             return false;
         }
 
-        //protected override void Initialize()
-        //{
-        //    base.Initialize();
-        //    //ExternalSettingsManager ext = ExternalSettingsManager.CreateForApplication(@"C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\IDE\devenv.exe");
-        //    //SettingsStore store = ext.GetReadOnlySettingsStore(SettingsScope.UserSettings);
-        //    //foreach (string name in store.GetPropertyNames(@"MRUItems\{a9c4a31f-f9cb-47a9-abc0-49ce82d0b3ac}\Items"))
-        //    //{
-        //    //    string value = store.GetString(@"MRUItems\{a9c4a31f-f9cb-47a9-abc0-49ce82d0b3ac}\Items", name);
-        //    //    Console.WriteLine("Property name: {0}, value: {1}", name, value.Split('|')[0]);
-        //    //}
+        private async Task GetDTEAsync()
+        {
+            await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
+            dte = await GetServiceAsync(typeof(DTE)) as DTE;
+            Assumes.Present(dte);
+        }
     }
 }
